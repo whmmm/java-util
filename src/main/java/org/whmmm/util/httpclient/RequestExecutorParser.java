@@ -98,7 +98,7 @@ class RequestExecutorParser {
 
                 RequestLog reqLog = getRequestLog(meta, getBody(meta));
                 sb.append(SEP)
-                  .append(String.format("## 响应时间 %s : %s(毫秒), %s(秒) ",
+                  .append(String.format("## 慢响应时间阈值 %s(ms), 实际耗时 : %s(毫秒), %s(秒) ",
                                         slowApiTime,
                                         millis,
                                         watch.getTotalTimeSeconds()
