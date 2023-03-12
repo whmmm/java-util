@@ -1,4 +1,4 @@
-package org.whmm.util.test.httpclient;
+package org.whmmm.util.test.httpclient;
 
 /**
  * <p> -------------------------- </p>
