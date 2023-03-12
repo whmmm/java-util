@@ -37,3 +37,11 @@ build/
 ### Mac OS ###
 .DS_Store
 .idea
+doc/node_modules
+**/node_modules
+**/**/.vuepress/.temp
+**/**/.vuepress/.cache
+node_modules/
+doc/.vuepress/.cache/
+doc/.vuepress/.temp/
+doc/.vuepress/dist/
