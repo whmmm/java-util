@@ -27,6 +27,8 @@ public class DeclareClient implements Serializable, InvocationHandler {
     public DeclareClient() {
     }
 
+    private final RequestExecutorWrapper executorWrapper = new RequestExecutorWrapper();
+
     @Setter
     @Getter
     private String baseUrl;
@@ -36,8 +38,6 @@ public class DeclareClient implements Serializable, InvocationHandler {
      */
     @Getter
     private IRequestExecutor executor = DeclareClientFactory.REFLECT_EXECUTOR;
-
-    private final RequestExecutorParser parser = new RequestExecutorParser();
     @Getter
     private IExecutorExceptionHandler exceptionHandler;
 
@@ -64,7 +64,7 @@ public class DeclareClient implements Serializable, InvocationHandler {
             }
         } else {
             //如果传进来的是一个接口（核心)
-            return parser.execReflectMethod(this, method, args);
+            return executorWrapper.execReflectMethod(this, method, args);
         }
         return null;
     }

@@ -32,122 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 class RequestExecutorParser {
     private static final Map<String, RequestMetaTemplate> TEMPLATE_CACHE = new ConcurrentHashMap<>();
-    private static final String SEP = System.lineSeparator();
-
-
-    public Object execReflectMethod(DeclareClient client, Method method, Object[] args) throws Exception {
-        String methodString = method.toString();
-        RequestMetaTemplate template = this.getTemplate(methodString, client, method, args);
-
-        RequestMeta meta = parseTemplate(client, args, template);
-
-        if (meta.isAsync()) {
-            ThreadPoolTaskExecutor taskExecutor = client.getAsyncTaskExecutor();
-            if (taskExecutor == null) {
-                throw new RuntimeException("线程池为空, 异步执行失败");
-            }
-
-            return taskExecutor.submit(() -> execRequestWrapper(client, meta));
-        } else {
-            return execRequestWrapper(client, meta);
-        }
-    }
-
-    @SuppressWarnings("rawtypes")
-    public Object execRequestWrapper(DeclareClient client, RequestMeta meta) throws Exception {
-        IRequestExecutor executor = client.getExecutor();
-
-        Object result = null;
-        StopWatch watch = new StopWatch();
-        StringBuilder sb = new StringBuilder();
-        boolean hasError = false;
-
-        watch.start();
-
-        /*if (executor.isDebug()) {
-            watch = new StopWatch();
-            watch.start();
-        }*/
-
-        try {
-            result = executor.executeRequest(meta);
-        } catch (Exception e) {
-            try {
-                IExecutorExceptionHandler handler = client.getExceptionHandler();
-                if (handler == null ||
-                    !this.supportException(e, handler)) {
-
-                    throw e;
-                } else {
-                    return handler.handle(e, meta);
-                }
-            } catch (Exception ex2) {
-                hasError = true;
-                sb.append(SEP);
-                sb.append("## 请求异常: ");
-                sb.append(ex2.getMessage());
-
-                throw ex2;
-            }
-        } finally {
-            watch.stop();
-            long millis = watch.getTotalTimeMillis();
-            long slowApiTime = executor.getSlowApiTime();
-            if (millis >= slowApiTime ||
-                hasError) {
-
-                RequestLog reqLog = getRequestLog(meta, getBody(meta));
-                sb.append(SEP)
-                  .append(String.format("## 慢响应时间阈值 %s(ms), 实际耗时 : %s(毫秒), %s(秒) ",
-                                        slowApiTime,
-                                        millis,
-                                        watch.getTotalTimeSeconds()
-                  ))
-                  .append(SEP);
-
-                Logger logger = executor.getLogger();
-                if (logger == null) {
-                    logger = log;
-                }
-                logger.warn(reqLog.dumpToLogStr(sb));
-            }
-        }
-        return result;
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    protected boolean supportException(Exception e, IExecutorExceptionHandler handler) {
-        List<Class<?>> list = handler.supportException();
-        for (Class clz : list) {
-            if (clz.isInstance(e)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static String getBody(RequestMeta meta) {
-        ResponseEntity<String> entity = meta.getResponseEntity();
-        if (entity == null) {
-            return null;
-        }
-        return entity.getBody();
-    }
-
-
-    private static RequestLog getRequestLog(RequestMeta meta, Object result) {
-        RequestLog reqLog = new RequestLog();
-        reqLog.setRequestId("---");
-        reqLog.setUrl(meta.getUrl());
-        reqLog.setType(meta.getHttpMethod().name());
-        reqLog.setParam("");
-        reqLog.setBody(meta.getBody());
-        reqLog.setLogLimitUsable(true);
-        reqLog.setResult(result + "");
-        reqLog.setMaxBodyLen(400);
-
-        return reqLog;
-    }
 
 
     /**
@@ -226,7 +110,7 @@ class RequestExecutorParser {
         }
     }
 
-    private RequestMetaTemplate getTemplate(String methodString,
+    public RequestMetaTemplate getTemplate(String methodString,
                                             DeclareClient client,
                                             Method method,
                                             Object[] args) {
