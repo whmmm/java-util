@@ -55,22 +55,42 @@ class RequestExecutor implements Serializable, IRequestExecutor {
 
         HttpEntity<Object> httpEntity = new HttpEntity<>(meta.getBody(), headers);
 
-        ResponseEntity<String> exchange = restTemplate.exchange(
-            meta.getUrl(),
-            meta.getHttpMethod(),
-            httpEntity,
-            String.class,
-            meta.getUriVariables()
+        boolean isResponseEntity = ReflectUtil.isGenericType(
+            ResponseEntity.class,
+            meta.getReturnType()
         );
 
-        meta.setResponseEntity(exchange);
-
-        String body = exchange.getBody();
-        Type returnType = meta.getReturnType();
-        if (returnType.equals(String.class)) {
-            return body;
+        if (isResponseEntity) {
+            // 有时候就想返回 responseEntity
+            // 如果返回值直接是 responseEntity . 那么需要做特殊处理
+            TypeRef typeRef = new TypeRef(ReflectUtil.getFirstGenericType(meta.getReturnType()));
+            // 使用 spring 的解析
+            return restTemplate.exchange(
+                meta.getUrl(),
+                meta.getHttpMethod(),
+                httpEntity,
+                typeRef,
+                meta.getUriVariables()
+            );
         } else {
-            return GSON.fromJson(body, returnType);
+            // 使用 gson 解析
+            ResponseEntity<String> exchange = restTemplate.exchange(
+                meta.getUrl(),
+                meta.getHttpMethod(),
+                httpEntity,
+                String.class,
+                meta.getUriVariables()
+            );
+
+            meta.setResponseEntity(exchange);
+
+            String body = exchange.getBody();
+            Type returnType = meta.getReturnType();
+            if (returnType.equals(String.class)) {
+                return body;
+            } else {
+                return GSON.fromJson(body, returnType);
+            }
         }
 
     }

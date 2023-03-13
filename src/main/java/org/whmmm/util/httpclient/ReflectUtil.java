@@ -3,6 +3,8 @@ package org.whmmm.util.httpclient;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 
 /**
@@ -65,5 +67,43 @@ public final class ReflectUtil {
         }
 
         return fields;
+    }
+
+    /**
+     * 获取第一个泛型的类型
+     * <pre>{@code
+     * example:
+     * Future<String>       =>  string
+     * ResponseEntity<Map>  =>  Map
+     * }</pre>
+     *
+     * @param paramType -
+     * @return -
+     */
+    @javax.annotation.Nullable
+    public static Type getFirstGenericType(Type paramType) {
+        ParameterizedType type = (ParameterizedType) paramType;
+        Type[] arguments = type.getActualTypeArguments();
+        if (arguments != null && arguments.length > 0) {
+            return arguments[0];
+        }
+        return null;
+    }
+
+    /**
+     * 判断是否是子泛型
+     * <pre>{@code
+     * example:
+     *
+     * isGenericType(ResponseEntity.class, TypeRef<ResponseEntity<String>>  )  => true
+     *
+     * }</pre>
+     *
+     * @param destType  要判断的类型
+     * @param paramType 参数
+     * @return -
+     */
+    public static boolean isGenericType(Type destType, Type paramType) {
+        return paramType.toString().startsWith(destType.getTypeName());
     }
 }

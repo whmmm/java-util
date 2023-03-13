@@ -1,5 +1,6 @@
 package org.whmmm.util.test.httpclient;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -19,6 +20,15 @@ public interface WeatherService {
      */
     @GetMapping("")
     String getWeatherV1();
+
+    /**
+     * 返回 {@link ResponseEntity} 用于调试, 或者代理的情况
+     *
+     * @param cityName -
+     * @return -
+     */
+    @GetMapping("")
+    ResponseEntity<Object> getWeatherV3(@RequestParam("cityName") String cityName);
 
     /**
      * 指定返回值类型

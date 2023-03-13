@@ -2,6 +2,7 @@ package org.whmmm.util.test.httpclient;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.ResponseEntity;
 import org.whmmm.util.httpclient.DeclareClient;
 
 /**
@@ -19,6 +20,8 @@ public class HttpclientTest {
         String uri = "https://v0.yiketianqi.com/api?unescape=1&version=v91&appid=43656176&appsecret=I42og6Lm&ext=&cityid=";
         WeatherService service = DeclareClient.builder()
                                               .target(WeatherService.class, uri);
+
+        ResponseEntity<Object> v3 = service.getWeatherV3("望都");
 
         String weatherV1 = service.getWeatherV1();
         // System.out.println("");
