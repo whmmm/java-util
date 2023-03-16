@@ -12,6 +12,9 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * <p><b> ----------------------- </b></p>
@@ -40,6 +43,8 @@ public class DeclareClient implements Serializable, InvocationHandler {
     private IRequestExecutor executor = DeclareClientFactory.REFLECT_EXECUTOR;
     @Getter
     private IExecutorExceptionHandler exceptionHandler;
+    @Getter
+    private List<IRequestExecutorInterceptor> interceptorList = Collections.emptyList();
 
     /**
      * 异步线程池
@@ -83,6 +88,7 @@ public class DeclareClient implements Serializable, InvocationHandler {
         // 异步线程池
         private ThreadPoolTaskExecutor asyncTaskExecutor;
         private IExecutorExceptionHandler exceptionHandler = null;
+        private final List<IRequestExecutorInterceptor> interceptorList = new ArrayList<>();
 
         /**
          * http client 执行实现
@@ -118,16 +124,35 @@ public class DeclareClient implements Serializable, InvocationHandler {
             return this;
         }
 
+        /**
+         * 添加拦截器
+         *
+         * @param interceptor -
+         * @return -
+         */
+        public DeclareClientBuilder interceptor(IRequestExecutorInterceptor interceptor) {
+            this.interceptorList.add(interceptor);
+            return this;
+        }
+
 
         @SuppressWarnings("unchecked")
         public <T> T target(Class<T> cls, String baseUrl) {
 
             DeclareClient client = new DeclareClient();
 
+            // 如果没有拦截器, 则添加一个默认的日志拦截器
+            if (this.interceptorList.isEmpty()) {
+                this.interceptorList.add(
+                    new HttpServerErrorLogInterceptor()
+                );
+            }
+
             client.setBaseUrl(baseUrl);
             client.asyncTaskExecutor = this.asyncTaskExecutor;
             client.executor = this.executor;
             client.exceptionHandler = this.exceptionHandler;
+            client.interceptorList = this.interceptorList;
 
             Object newProxyInstance = Proxy.newProxyInstance(
                 cls.getClassLoader(),

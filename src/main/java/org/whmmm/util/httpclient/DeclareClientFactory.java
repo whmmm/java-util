@@ -81,13 +81,13 @@ public class DeclareClientFactory {
     }
 
     public static Map<String, Object> defaultHeaders() {
-        HashMap<String, Object> header = new HashMap<>();
-        header.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
-        header.put("Accept-Charset", "gbk");
-        return header;
-        /*return Collection2.hashMap(
-            , MediaType.APPLICATION_JSON_UTF8_VALUE
-        );*/
+        String contentType = MediaType.APPLICATION_JSON_VALUE;
+        // 其中 text/html 是为了兼容报错时(远程服务 500)的处理
+        contentType += ";text/html;charset=UTF-8";
+
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(HttpHeaders.CONTENT_TYPE, contentType);
+        return headers;
     }
 
     public static Gson gson() {

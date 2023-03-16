@@ -60,11 +60,22 @@ public class RequestMeta implements Serializable {
         if (hasQuery) {
             sb.append(temp);
         } else {
+            // stringBuilder 0,1 是替换第一个字符
             sb.append(
-                temp.replace(0, 0, "?")
+                temp.replace(0, 1, "?")
             );
         }
 
         return sb.toString();
+    }
+
+    /**
+     * 生成 url
+     *
+     * @param sb 基础的 url 信息
+     * @return -
+     */
+    public String generateUrl(StringBuilder sb) {
+        return this.generateUrl(sb, this.getQueryMap());
     }
 }

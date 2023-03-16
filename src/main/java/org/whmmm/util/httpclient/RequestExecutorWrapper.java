@@ -7,10 +7,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.StopWatch;
 
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * 执行反射代理方法
+ * 执行反射代理方法,也可以单独拿处理执行带日志的请求
  * <p><b> ----------------------- </b></p>
  * <p><b> author: whmmm           </b></p>
  * <p><b> date  : 2023/3/13 9:16 </b></p>
@@ -18,7 +19,7 @@ import java.util.List;
  * @author whmmm
  */
 @Slf4j
-final class RequestExecutorWrapper {
+public final class RequestExecutorWrapper {
 
     private final RequestExecutorParser parser = new RequestExecutorParser();
     private static final String SEP = System.lineSeparator();
@@ -52,27 +53,43 @@ final class RequestExecutorWrapper {
         }
     }
 
+    /**
+     * 执行请求, 也可以单独拿处理执行带日志的请求. <br/>
+     * 但是 {@link RequestMeta} 需要自行构建
+     *
+     * @param client -
+     * @param meta   -
+     * @return -
+     * @throws Exception -
+     */
     @SuppressWarnings("rawtypes")
-    private Object execRequestWrapper(DeclareClient client, RequestMeta meta) throws Exception {
+    public Object execRequestWrapper(DeclareClient client, RequestMeta meta) throws Exception {
         IRequestExecutor executor = client.getExecutor();
+        List<IRequestExecutorInterceptor> interceptorList = client.getInterceptorList();
+        if (interceptorList == null) {
+            interceptorList = Collections.emptyList();
+        }
 
         Object result = null;
         StopWatch watch = new StopWatch();
         StringBuilder sb = new StringBuilder();
         boolean hasError = false;
 
-        watch.start();
-
-        /*if (executor.isDebug()) {
-            watch = new StopWatch();
-            watch.start();
-        }*/
-
         try {
+            for (IRequestExecutorInterceptor interceptor : interceptorList) {
+                interceptor.beforeExecute(meta);
+            }
             this.validateUrl(client, meta);
+            watch.start();
             result = executor.executeRequest(meta);
+            for (IRequestExecutorInterceptor interceptor : interceptorList) {
+                interceptor.onComplete(meta, result);
+            }
         } catch (Exception e) {
             try {
+                for (IRequestExecutorInterceptor interceptor : interceptorList) {
+                    interceptor.onError(e, meta);
+                }
                 IExecutorExceptionHandler handler = client.getExceptionHandler();
                 if (handler == null ||
                     !this.supportException(e, handler)) {
@@ -90,29 +107,63 @@ final class RequestExecutorWrapper {
                 throw ex2;
             }
         } finally {
-            watch.stop();
-            long millis = watch.getTotalTimeMillis();
-            long slowApiTime = executor.getSlowApiTime();
-            if (millis >= slowApiTime ||
-                hasError) {
-
-                RequestLog reqLog = getRequestLog(meta, getBody(meta));
-                sb.append(SEP)
-                  .append(String.format("## 慢响应时间阈值 %s(ms), 实际耗时 : %s(毫秒), %s(秒) ",
-                                        slowApiTime,
-                                        millis,
-                                        watch.getTotalTimeSeconds()
-                  ))
-                  .append(SEP);
-
-                Logger logger = executor.getLogger();
-                if (logger == null) {
-                    logger = log;
-                }
-                logger.warn(reqLog.dumpToLogStr(sb));
-            }
+            this.recordRequestLog(meta, executor, watch, sb, hasError);
         }
         return result;
+    }
+
+    /**
+     * 记录请求日志方法
+     *
+     * @param meta     请求元数据信息
+     * @param executor http 执行的实现
+     * @param watch    {@link StopWatch}, 用于计时
+     * @param sb       已存在的日志对象
+     * @param hasError 是否含有异常错误
+     */
+    private void recordRequestLog(RequestMeta meta,
+                                  IRequestExecutor executor,
+                                  StopWatch watch,
+                                  StringBuilder sb,
+                                  boolean hasError) {
+        watch.stop();
+        long millis = watch.getTotalTimeMillis();
+        long slowApiTime = executor.getSlowApiTime();
+        if (millis >= slowApiTime ||
+            hasError) {
+
+            RequestLog reqLog = getRequestLog(meta, getBody(meta));
+            sb.append(SEP)
+              .append(String.format("## 慢响应时间阈值 %s(ms), 实际耗时 : %s(毫秒), %s(秒) ",
+                                    slowApiTime,
+                                    millis,
+                                    watch.getTotalTimeSeconds()
+              ))
+              .append(SEP);
+
+            Logger logger = executor.getLogger();
+            if (logger == null) {
+                logger = log;
+            }
+            logger.warn(reqLog.dumpToLogStr(sb));
+        }
+    }
+
+    /**
+     * 校验 url 是否合法
+     *
+     * @param client -
+     * @param meta   -
+     */
+    private void validateUrl(DeclareClient client, RequestMeta meta) {
+        String url = meta.getUrl();
+        if (!url.contains("://")) {
+            StringBuilder sb = new StringBuilder(client.getBaseUrl());
+            sb.append(url);
+            meta.setUrl(
+                meta.generateUrl(sb)
+            );
+        }
     }
 
 
@@ -155,22 +206,5 @@ final class RequestExecutorWrapper {
             return null;
         }
         return entity.getBody();
-    }
-
-    /**
-     * 校验 url 是否合法
-     *
-     * @param client -
-     * @param meta   -
-     */
-    private void validateUrl(DeclareClient client, RequestMeta meta) {
-        String url = meta.getUrl();
-        if (!url.contains("://")) {
-            StringBuilder sb = new StringBuilder(client.getBaseUrl());
-            sb.append(url);
-            meta.setUrl(
-                meta.generateUrl(sb, meta.getQueryMap())
-            );
-        }
     }
 }
