@@ -28,7 +28,7 @@ public interface WeatherService {
      * @return -
      */
     @GetMapping("")
-    ResponseEntity<Object> getWeatherV3(@RequestParam("cityName") String cityName);
+    ResponseEntity<Object> getWeatherV3(@RequestParam("city") String cityName);
 
     /**
      * 指定返回值类型
@@ -37,5 +37,5 @@ public interface WeatherService {
      * @return -
      */
     @GetMapping("")
-    Object getWeatherV2(@RequestParam("cityName") String cityName);
+    Object getWeatherV2(@RequestParam("city") String cityName);
 }
