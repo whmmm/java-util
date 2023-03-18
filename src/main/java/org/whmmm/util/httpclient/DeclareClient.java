@@ -6,8 +6,8 @@ import lombok.Setter;
 import lombok.experimental.Tolerate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.whmmm.util.jsr.Nullable;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
