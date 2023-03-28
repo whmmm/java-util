@@ -145,4 +145,16 @@ public class PoiTest {
 
         return list;
     }
+
+    @Test
+    public void testError() throws Exception{
+        String str = "{\"headers\":[{\"name\":\"姓名\",\"childHead\":[]},{\"name\":\"排名\",\"childHead\":[]},{\"name\":\"班级\",\"childHead\":[]},{\"name\":\"总分\",\"childHead\":[]},{\"name\":\"数学\",\"childHead\":[]},{\"name\":\"物理\",\"childHead\":[]},{\"name\":\"生物\",\"childHead\":[]}],\"data\":[[{\"value\":\"学生01\"},{\"value\":1},{\"value\":\"精准教学测试（1）班\"},{\"value\":\"12\"},{\"value\":12}],[{\"value\":\"学生03\"},{\"value\":1},{\"value\":\"精准教学测试（1）班\"},{\"value\":\"12\"},{\"value\":12}],[{\"value\":\"学生07\"},{\"value\":3},{\"value\":\"精准教学测试（1）班\"},{\"value\":\"10\"},{\"value\":10}],[{\"value\":\"学生09\"},{\"value\":3},{\"value\":\"精准教学测试（1）班\"},{\"value\":\"10\"},{\"value\":10}],[{\"value\":\"学生02\"},{\"value\":3},{\"value\":\"精准教学测试（1）班\"},{\"value\":\"10\"},{\"value\":10}],[{\"value\":\"学生06\"},{\"value\":6},{\"value\":\"精准教学测试（1）班\"},{\"value\":\"4\"},{\"value\":4}],[{\"value\":\"学生08\"},{\"value\":6},{\"value\":\"精准教学测试（1）班\"},{\"value\":\"4\"},{\"value\":4}],[{\"value\":\"学生05\"},{\"value\":8},{\"value\":\"精准教学测试（1）班\"},{\"value\":\"2\"},{\"value\":2}]],\"title\":\"校级分析报告-重点学生信息前十\",\"exportStyle\":{\"headerRowHeight\":2,\"columnWidth\":2.3}}";
+        Gson gson = new Gson();
+
+        ExportRootForm form = gson.fromJson(str, ExportRootForm.class);
+
+        PoiExportService service = new PoiExportService();
+
+        service.dynamicExport(form, new FileOutputStream("报错.xls"));
+    }
 }
